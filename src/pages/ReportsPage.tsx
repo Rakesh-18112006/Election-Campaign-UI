@@ -33,7 +33,7 @@ export function ReportsPage() {
     enabled: !!selectedCampaignId,
   });
 
-  const areaData = (campaignStats?.stats?.byArea || []).map((a: { areaName: string; total: number; visited: number }) => ({
+  const areaData: { name: string; total: number; visited: number; pending: number; completionRate: number }[] = (campaignStats?.stats?.byArea || []).map((a: { areaName: string; total: number; visited: number }) => ({
     name: a.areaName,
     total: a.total,
     visited: a.visited,
@@ -106,7 +106,7 @@ export function ReportsPage() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={260}>
                   <PieChart>
-                    <Pie data={statusData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                    <Pie data={statusData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`} labelLine={false}>
                       {statusData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
                     <Tooltip />
