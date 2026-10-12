@@ -1,8 +1,19 @@
-export type UserRole = 'MAIN_ADMIN' | 'MAYOR' | 'SARPANCH' | 'WARD_SUPERVISOR' | 'WARD_MEMBER';
+export type UserRole = 'MAIN_ADMIN' | 'MAYOR' | 'CORPORATOR' | 'DIVISIONAL_INCHARGE' | 'WARD_MEMBER';
 export type AccountStatus = 'active' | 'suspended' | 'pending';
 export type CampaignStatus = 'active' | 'paused' | 'completed' | 'draft';
 export type AreaType = 'district' | 'ward' | 'village' | 'street' | 'other';
 export type RecordStatus = 'unassigned' | 'assigned' | 'visited' | 'not_visited';
+
+export interface Party {
+  _id: string;
+  name: string;
+  description?: string;
+  adminUserId?: string | User;
+  createdBy: string | User;
+  status: 'active' | 'suspended';
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface User {
   _id: string;
@@ -10,6 +21,7 @@ export interface User {
   username: string;
   role: UserRole;
   status: AccountStatus;
+  partyId?: string | Party;
   parentUserId?: string | User;
   assignedScopeIds: string[];
   mustChangePassword: boolean;
@@ -27,6 +39,7 @@ export interface Campaign {
   startDate?: string;
   endDate?: string;
   createdBy: string | User;
+  partyId?: string | Party;
   createdAt: string;
   updatedAt: string;
 }
@@ -39,6 +52,7 @@ export interface GeographicArea {
   parentAreaId?: string | GeographicArea;
   managerIds: string[] | User[];
   status: 'active' | 'inactive';
+  partyId?: string | Party;
   createdAt: string;
   updatedAt: string;
 }
@@ -47,6 +61,7 @@ export interface VoterRecord {
   _id: string;
   campaignId: string | Campaign;
   geographicAreaId: string | GeographicArea;
+  partyId?: string | Party;
   name: string;
   voterIdRef?: string;
   houseNumber?: string;
@@ -54,6 +69,7 @@ export interface VoterRecord {
   address?: string;
   currentAssignmentId?: string | RecordAssignment;
   recordStatus: RecordStatus;
+  visitCount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -95,6 +111,8 @@ export interface AuditLog {
 }
 
 export interface DashboardStats {
+  parties?: { total: number; active: number };
+  mayors?: { total: number };
   campaigns: { total: number; active: number };
   records: {
     total: number;

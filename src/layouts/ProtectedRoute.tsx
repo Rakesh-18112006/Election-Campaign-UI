@@ -30,8 +30,16 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/change-password" replace />;
   }
 
+  // MAIN_ADMIN has no dashboard — send to parties
+  const defaultHome = user.role === 'MAIN_ADMIN' ? '/parties' : '/dashboard';
+
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={defaultHome} replace />;
+  }
+
+  // Prevent MAIN_ADMIN from landing on /dashboard (root redirect)
+  if (user.role === 'MAIN_ADMIN' && location.pathname === '/dashboard') {
+    return <Navigate to="/parties" replace />;
   }
 
   return <>{children}</>;

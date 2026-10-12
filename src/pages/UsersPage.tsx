@@ -14,12 +14,15 @@ import { getRoleBadgeColor, getRoleLabel, getStatusColor, formatDate } from '@/l
 import { toast } from '@/hooks/useToast';
 import { Plus, Search, UserCircle, Key, Ban, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
-  { value: 'MAYOR', label: 'Mayor' },
-  { value: 'SARPANCH', label: 'Sarpanch' },
-  { value: 'WARD_SUPERVISOR', label: 'Ward Supervisor' },
-  { value: 'WARD_MEMBER', label: 'Ward Member' },
+const ALL_ROLE_OPTIONS: { value: UserRole; label: string; minRank: number }[] = [
+  { value: 'CORPORATOR', label: 'Corporator', minRank: 4 },         // MAYOR can create
+  { value: 'DIVISIONAL_INCHARGE', label: 'Divisional Incharge', minRank: 3 }, // CORPORATOR can create
+  { value: 'WARD_MEMBER', label: 'Ward Member', minRank: 2 },        // DIVISIONAL_INCHARGE can create
 ];
+
+const ROLE_RANK: Record<UserRole, number> = {
+  MAIN_ADMIN: 5, MAYOR: 4, CORPORATOR: 3, DIVISIONAL_INCHARGE: 2, WARD_MEMBER: 1,
+};
 
 export function UsersPage() {
   const { user: currentUser } = useAuth();
@@ -85,7 +88,7 @@ export function UsersPage() {
 
   const totalPages = Math.ceil((data?.total || 0) / 15);
 
-  const availableRoles = currentUser?.role === 'MAIN_ADMIN' ? ROLE_OPTIONS : ROLE_OPTIONS.filter((r) => r.value === 'WARD_MEMBER');
+  const availableRoles = currentUser ? ALL_ROLE_OPTIONS.filter(r => r.minRank < ROLE_RANK[currentUser.role]) : [];
 
   return (
     <div className="space-y-5">

@@ -42,7 +42,7 @@ export function RecordsPage() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isManagerOrAbove = ['MAIN_ADMIN', 'MAYOR', 'SARPANCH', 'WARD_SUPERVISOR'].includes(user?.role || '');
+  const isManagerOrAbove = ['MAYOR', 'CORPORATOR', 'DIVISIONAL_INCHARGE'].includes(user?.role || '');
 
   const { data, isLoading } = useQuery({
     queryKey: ['records', page, search, statusFilter, areaFilter],
@@ -250,6 +250,11 @@ export function RecordsPage() {
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(record.recordStatus)}`}>
                             {record.recordStatus.replace('_', ' ')}
                           </span>
+                          {record.visitCount > 0 && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-100">
+                              {record.visitCount} visit{record.visitCount > 1 ? 's' : ''}
+                            </span>
+                          )}
                         </div>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-gray-500">
                           {record.houseNumber && <span className="flex items-center gap-1"><Home className="h-3 w-3" />{record.houseNumber}</span>}

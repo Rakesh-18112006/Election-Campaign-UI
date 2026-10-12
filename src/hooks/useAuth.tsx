@@ -27,15 +27,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const init = async () => {
-      try {
-        const { data } = await api.post('/auth/refresh');
-        setAccessToken(data.accessToken);
-        await refreshUser();
-      } catch {
-        setUser(null);
-      } finally {
-        setIsLoading(false);
+      // Retry once after 1s to handle Vercel cold start delays
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const { data } = await api.post('/auth/refresh');
+          setAccessToken(data.accessToken);
+          await refreshUser();
+          setIsLoading(false);
+          return;
+        } catch {
+          if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
+        }
       }
+      setUser(null);
+      setIsLoading(false);
     };
     init();
 

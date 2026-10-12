@@ -9,6 +9,7 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { ChangePasswordPage } from '@/pages/auth/ChangePasswordPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { UsersPage } from '@/pages/UsersPage';
+import { PartiesPage } from '@/pages/PartiesPage';
 import { CampaignsPage } from '@/pages/CampaignsPage';
 import { AreasPage } from '@/pages/AreasPage';
 import { RecordsPage } from '@/pages/RecordsPage';
@@ -24,7 +25,8 @@ const queryClient = new QueryClient({
   },
 });
 
-const MANAGER_ROLES = ['MAIN_ADMIN', 'MAYOR', 'SARPANCH', 'WARD_SUPERVISOR'] as const;
+const PARTY_ROLES = ['MAYOR', 'CORPORATOR', 'DIVISIONAL_INCHARGE', 'WARD_MEMBER'] as const;
+const MANAGER_ROLES = ['MAYOR', 'CORPORATOR', 'DIVISIONAL_INCHARGE'] as const;
 
 export default function App() {
   return (
@@ -47,7 +49,33 @@ export default function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <Routes>
-                      <Route path="/dashboard" element={<DashboardPage />} />
+                      {/* MAIN_ADMIN: parties + audit logs only */}
+                      <Route
+                        path="/parties"
+                        element={
+                          <ProtectedRoute allowedRoles={['MAIN_ADMIN']}>
+                            <PartiesPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/audit-logs"
+                        element={
+                          <ProtectedRoute allowedRoles={['MAIN_ADMIN']}>
+                            <AuditLogsPage />
+                          </ProtectedRoute>
+                        }
+                      />
+
+                      {/* Party roles */}
+                      <Route
+                        path="/dashboard"
+                        element={
+                          <ProtectedRoute allowedRoles={[...PARTY_ROLES]}>
+                            <DashboardPage />
+                          </ProtectedRoute>
+                        }
+                      />
                       <Route
                         path="/users"
                         element={
@@ -81,14 +109,7 @@ export default function App() {
                           </ProtectedRoute>
                         }
                       />
-                      <Route
-                        path="/audit-logs"
-                        element={
-                          <ProtectedRoute allowedRoles={['MAIN_ADMIN']}>
-                            <AuditLogsPage />
-                          </ProtectedRoute>
-                        }
-                      />
+
                       <Route path="/" element={<Navigate to="/dashboard" replace />} />
                       <Route path="*" element={<Navigate to="/dashboard" replace />} />
                     </Routes>

@@ -11,11 +11,10 @@ import {
   ClipboardList,
   LogOut,
   Menu,
-  X,
   Vote,
+  Building2,
   ChevronRight,
   Bell,
-  Settings,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -27,13 +26,14 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['MAIN_ADMIN', 'MAYOR', 'SARPANCH', 'WARD_SUPERVISOR', 'WARD_MEMBER'] },
-  { label: 'Campaigns', path: '/campaigns', icon: Vote, roles: ['MAIN_ADMIN', 'MAYOR', 'SARPANCH', 'WARD_SUPERVISOR'] },
-  { label: 'Users', path: '/users', icon: Users, roles: ['MAIN_ADMIN', 'MAYOR', 'SARPANCH', 'WARD_SUPERVISOR'] },
-  { label: 'Geographic Areas', path: '/areas', icon: MapPin, roles: ['MAIN_ADMIN', 'MAYOR', 'SARPANCH', 'WARD_SUPERVISOR'] },
-  { label: 'Voter Records', path: '/records', icon: FileText, roles: ['MAIN_ADMIN', 'MAYOR', 'SARPANCH', 'WARD_SUPERVISOR', 'WARD_MEMBER'] },
-  { label: 'Reports', path: '/reports', icon: BarChart3, roles: ['MAIN_ADMIN', 'MAYOR', 'SARPANCH', 'WARD_SUPERVISOR'] },
+  { label: 'Parties', path: '/parties', icon: Building2, roles: ['MAIN_ADMIN'] },
   { label: 'Audit Logs', path: '/audit-logs', icon: ClipboardList, roles: ['MAIN_ADMIN'] },
+  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['MAYOR', 'CORPORATOR', 'DIVISIONAL_INCHARGE', 'WARD_MEMBER'] },
+  { label: 'Campaigns', path: '/campaigns', icon: Vote, roles: ['MAYOR', 'CORPORATOR', 'DIVISIONAL_INCHARGE'] },
+  { label: 'Users', path: '/users', icon: Users, roles: ['MAYOR', 'CORPORATOR', 'DIVISIONAL_INCHARGE'] },
+  { label: 'Geographic Areas', path: '/areas', icon: MapPin, roles: ['MAYOR', 'CORPORATOR', 'DIVISIONAL_INCHARGE'] },
+  { label: 'Voter Records', path: '/records', icon: FileText, roles: ['MAYOR', 'CORPORATOR', 'DIVISIONAL_INCHARGE', 'WARD_MEMBER'] },
+  { label: 'Reports', path: '/reports', icon: BarChart3, roles: ['MAYOR', 'CORPORATOR', 'DIVISIONAL_INCHARGE'] },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
