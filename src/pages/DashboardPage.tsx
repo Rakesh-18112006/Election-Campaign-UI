@@ -253,13 +253,13 @@ export function DashboardPage() {
                 <div key={log._id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
                   <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
                     <span className="text-blue-700 text-xs font-bold">
-                      {typeof log.actorUserId === 'object' ? (log.actorUserId as User).name?.[0] : 'U'}
+                      {log.actorUserId && typeof log.actorUserId === 'object' ? (log.actorUserId as User).name?.[0] : 'U'}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-700 truncate">
                       <span className="font-medium">
-                        {typeof log.actorUserId === 'object' ? (log.actorUserId as User).name : 'Unknown'}
+                        {log.actorUserId && typeof log.actorUserId === 'object' ? (log.actorUserId as User).name : 'Unknown'}
                       </span>
                       {' · '}
                       <Badge variant="secondary" className="text-xs px-1.5 py-0 font-mono">{log.action}</Badge>
