@@ -15,9 +15,9 @@ import { toast } from '@/hooks/useToast';
 import { Plus, Search, UserCircle, Key, Ban, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ALL_ROLE_OPTIONS: { value: UserRole; label: string; minRank: number }[] = [
-  { value: 'CORPORATOR', label: 'Corporator', minRank: 4 },         // MAYOR can create
-  { value: 'DIVISIONAL_INCHARGE', label: 'Divisional Incharge', minRank: 3 }, // CORPORATOR can create
-  { value: 'WARD_MEMBER', label: 'Ward Member', minRank: 2 },        // DIVISIONAL_INCHARGE can create
+  { value: 'CORPORATOR', label: 'Corporator', minRank: 3 },
+  { value: 'DIVISIONAL_INCHARGE', label: 'Divisional Incharge', minRank: 2 },
+  { value: 'WARD_MEMBER', label: 'Ward Member', minRank: 1 },
 ];
 
 const ROLE_RANK: Record<UserRole, number> = {
