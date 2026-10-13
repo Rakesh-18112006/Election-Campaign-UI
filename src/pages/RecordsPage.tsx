@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getStatusColor, formatDate } from '@/lib/utils';
 import { toast } from '@/hooks/useToast';
 import {
-  FileText, Search, Upload, UserCheck, MapPin, Filter, ChevronLeft, ChevronRight,
+  FileText, Search, Upload, UserPlus, UserCheck, MapPin, Filter, ChevronLeft, ChevronRight,
   CheckCircle2, XCircle, Navigation, Loader2, Phone, Home
 } from 'lucide-react';
 
@@ -24,6 +24,11 @@ interface GpsData {
   capturedAt: string;
 }
 
+const EMPTY_VOTER_FORM = {
+  campaignId: '', geographicAreaId: '',
+  name: '', voterIdRef: '', houseNumber: '', phone: '', address: '',
+};
+
 export function RecordsPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -32,6 +37,8 @@ export function RecordsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [areaFilter, setAreaFilter] = useState('');
   const [importOpen, setImportOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addForm, setAddForm] = useState(EMPTY_VOTER_FORM);
   const [assignOpen, setAssignOpen] = useState<VoterRecord | null>(null);
   const [visitOpen, setVisitOpen] = useState<VoterRecord | null>(null);
   const [gpsData, setGpsData] = useState<GpsData | null>(null);
@@ -113,6 +120,21 @@ export function RecordsPage() {
     },
   });
 
+  const addMutation = useMutation({
+    mutationFn: (payload: typeof addForm) => api.post('/records', payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['records'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-overview'] });
+      setAddOpen(false);
+      setAddForm(EMPTY_VOTER_FORM);
+      toast({ title: 'Voter added', description: 'The voter record has been created.', variant: 'success' });
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast({ title: 'Could not add voter', description: msg || 'Please check the details and try again', variant: 'destructive' });
+    },
+  });
+
   const importMutation = useMutation({
     mutationFn: (formData: FormData) => api.post('/records/import', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -165,6 +187,10 @@ export function RecordsPage() {
   };
 
   const totalPages = Math.ceil((data?.total || 0) / 15);
+  const addAreas = addForm.campaignId ? (areas || []).filter((a) => {
+    const cId = typeof a.campaignId === 'object' ? (a.campaignId as Campaign)._id : a.campaignId;
+    return cId === addForm.campaignId;
+  }) : [];
   const importAreas = importCampaignId ? (areas || []).filter((a) => {
     const cId = typeof a.campaignId === 'object' ? (a.campaignId as Campaign)._id : a.campaignId;
     return cId === importCampaignId;
@@ -178,10 +204,16 @@ export function RecordsPage() {
           <p className="text-sm text-gray-500">{user?.role === 'WARD_MEMBER' ? 'Your assigned records' : `${data?.total || 0} total records`}</p>
         </div>
         {isManagerOrAbove && (
-          <Button onClick={() => setImportOpen(true)}>
-            <Upload className="h-4 w-4 mr-1.5" />
-            Import Records
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setAddOpen(true)}>
+              <UserPlus className="h-4 w-4 mr-1.5" />
+              Add Voter
+            </Button>
+            <Button onClick={() => setImportOpen(true)}>
+              <Upload className="h-4 w-4 mr-1.5" />
+              Import Records
+            </Button>
+          </div>
         )}
       </div>
 
@@ -393,6 +425,71 @@ export function RecordsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAssignOpen(null)}>Cancel</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Voter Dialog */}
+      <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) setAddForm(EMPTY_VOTER_FORM); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Voter</DialogTitle>
+            <DialogDescription>Add a single voter record manually. For many voters at once, use Import Records.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Campaign *</Label>
+              <Select value={addForm.campaignId} onValueChange={(v) => setAddForm({ ...addForm, campaignId: v, geographicAreaId: '' })}>
+                <SelectTrigger><SelectValue placeholder="Select campaign" /></SelectTrigger>
+                <SelectContent>
+                  {(campaigns || []).map((c) => (
+                    <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Geographic Area *</Label>
+              <Select value={addForm.geographicAreaId} onValueChange={(v) => setAddForm({ ...addForm, geographicAreaId: v })} disabled={!addForm.campaignId}>
+                <SelectTrigger><SelectValue placeholder="Select area" /></SelectTrigger>
+                <SelectContent>
+                  {addAreas.map((a) => (
+                    <SelectItem key={a._id} value={a._id}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Full Name *</Label>
+              <Input placeholder="Enter voter's full name" value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Voter ID</Label>
+                <Input placeholder="Optional" value={addForm.voterIdRef} onChange={(e) => setAddForm({ ...addForm, voterIdRef: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>House Number</Label>
+                <Input placeholder="Optional" value={addForm.houseNumber} onChange={(e) => setAddForm({ ...addForm, houseNumber: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Phone</Label>
+              <Input type="tel" placeholder="Optional" value={addForm.phone} onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Address</Label>
+              <Input placeholder="Optional" value={addForm.address} onChange={(e) => setAddForm({ ...addForm, address: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setAddOpen(false); setAddForm(EMPTY_VOTER_FORM); }}>Cancel</Button>
+            <Button
+              onClick={() => addMutation.mutate(addForm)}
+              disabled={addMutation.isPending || !addForm.name.trim() || !addForm.campaignId || !addForm.geographicAreaId}
+            >
+              {addMutation.isPending ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" />Adding...</> : 'Add Voter'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
