@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api, { setAccessToken } from '../services/api';
-import { User } from '../types';
+import { User, UserTheme } from '../types';
+import { applyTheme, cacheTheme, readCachedTheme } from '../lib/partyTheme';
 
 interface AuthContextValue {
   user: User | null;
+  theme: UserTheme | null;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -14,16 +16,28 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [theme, setThemeState] = useState<UserTheme | null>(() => readCachedTheme());
   const [isLoading, setIsLoading] = useState(true);
+
+  const setTheme = useCallback((next: UserTheme | null | undefined) => {
+    setThemeState(next ?? null);
+    cacheTheme(next ?? null);
+  }, []);
+
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   const refreshUser = useCallback(async () => {
     try {
       const { data } = await api.get('/auth/me');
       setUser(data.user);
+      setTheme(data.theme);
     } catch {
       setUser(null);
+      setTheme(null);
     }
-  }, []);
+  }, [setTheme]);
 
   useEffect(() => {
     const init = async () => {
@@ -40,19 +54,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       setUser(null);
+      setTheme(null);
       setIsLoading(false);
     };
     init();
 
-    const handleLogout = () => setUser(null);
+    const handleLogout = () => {
+      setUser(null);
+      setTheme(null);
+    };
     window.addEventListener('auth:logout', handleLogout);
     return () => window.removeEventListener('auth:logout', handleLogout);
-  }, [refreshUser]);
+  }, [refreshUser, setTheme]);
 
   const login = async (username: string, password: string) => {
     const { data } = await api.post('/auth/login', { username, password });
     setAccessToken(data.accessToken);
     setUser(data.user);
+    setTheme(data.theme);
   };
 
   const logout = async () => {
@@ -61,11 +80,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setAccessToken(null);
       setUser(null);
+      setTheme(null);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, theme, isLoading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

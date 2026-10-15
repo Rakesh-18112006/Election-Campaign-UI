@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/services/api';
-import { Party, User } from '@/types';
+import { Party, PartyTheme, PartyType, User } from '@/types';
+import { PARTY_OPTIONS, PARTY_THEMES, DEFAULT_CUSTOM_COLOR, buildCustomTheme } from '@/lib/partyTheme';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { getStatusColor, formatDate } from '@/lib/utils';
@@ -16,15 +18,34 @@ interface CreatedPartyResult {
   party: Party & { adminUserId: User };
 }
 
+const EMPTY_FORM = {
+  partyType: '' as PartyType | '',
+  partyName: '', primaryColor: DEFAULT_CUSTOM_COLOR, partyDescription: '',
+  mayorName: '', mayorUsername: '', mayorPassword: '',
+};
+
+function previewTheme(partyType: PartyType | '', primaryColor: string): PartyTheme | null {
+  if (!partyType) return null;
+  if (partyType === 'OTHER') return /^#[0-9a-fA-F]{6}$/.test(primaryColor) ? buildCustomTheme(primaryColor) : null;
+  return PARTY_THEMES[partyType];
+}
+
+function ThemeSwatches({ theme }: { theme: PartyTheme }) {
+  return (
+    <div className="flex items-center gap-1" aria-hidden>
+      {[theme.primary, theme.dark, theme.tint, theme.accent].map((c, i) => (
+        <span key={i} className="h-3.5 w-3.5 rounded-full border border-black/10" style={{ backgroundColor: c }} />
+      ))}
+    </div>
+  );
+}
+
 export function PartiesPage() {
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [createdResult, setCreatedResult] = useState<CreatedPartyResult | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [form, setForm] = useState({
-    partyName: '', partyDescription: '',
-    mayorName: '', mayorUsername: '', mayorPassword: '',
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const { data, isLoading } = useQuery({
     queryKey: ['parties'],
@@ -35,12 +56,20 @@ export function PartiesPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (payload: typeof form) => api.post('/parties', payload),
+    mutationFn: (payload: typeof form) =>
+      api.post('/parties', {
+        partyType: payload.partyType,
+        partyDescription: payload.partyDescription,
+        mayorName: payload.mayorName,
+        mayorUsername: payload.mayorUsername,
+        mayorPassword: payload.mayorPassword,
+        ...(payload.partyType === 'OTHER' && { partyName: payload.partyName, primaryColor: payload.primaryColor }),
+      }),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['parties'] });
       setCreateOpen(false);
       setCreatedResult(res.data);
-      setForm({ partyName: '', partyDescription: '', mayorName: '', mayorUsername: '', mayorPassword: '' });
+      setForm(EMPTY_FORM);
       toast({ title: 'Party created', description: 'Party and Mayor account have been set up.', variant: 'success' });
     },
     onError: (err: unknown) => {
@@ -94,12 +123,16 @@ export function PartiesPage() {
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
-                        <Building2 className="h-5 w-5 text-blue-700" />
+                      <div
+                        className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center shrink-0"
+                        style={party.theme ? { backgroundColor: party.theme.primary } : undefined}
+                      >
+                        <Building2 className={party.theme ? 'h-5 w-5 text-white' : 'h-5 w-5 text-blue-700'} />
                       </div>
                       <div className="min-w-0">
                         <CardTitle className="text-sm font-semibold text-gray-900 truncate">{party.name}</CardTitle>
                         <p className="text-xs text-gray-500 mt-0.5">Created {formatDate(party.createdAt)}</p>
+                        {party.theme && <div className="mt-1.5"><ThemeSwatches theme={party.theme} /></div>}
                       </div>
                     </div>
                     <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(party.status)}`}>
@@ -157,10 +190,43 @@ export function PartiesPage() {
             <div className="space-y-3 pb-3 border-b border-gray-100">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Party Details</p>
               <div className="space-y-1.5">
-                <Label htmlFor="partyName">Party Name *</Label>
-                <Input id="partyName" placeholder="e.g. Progressive Alliance" value={form.partyName}
-                  onChange={(e) => setForm(f => ({ ...f, partyName: e.target.value }))} />
+                <Label>Party *</Label>
+                <Select value={form.partyType} onValueChange={(v) => setForm(f => ({ ...f, partyType: v as PartyType }))}>
+                  <SelectTrigger id="partyType">
+                    <SelectValue placeholder="Select a party" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PARTY_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+              {form.partyType === 'OTHER' && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="partyName">Party Name *</Label>
+                    <Input id="partyName" placeholder="e.g. Progressive Alliance" value={form.partyName}
+                      onChange={(e) => setForm(f => ({ ...f, partyName: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="primaryColor">Party Colour</Label>
+                    <div className="flex items-center gap-2">
+                      <input id="primaryColor" type="color" value={form.primaryColor}
+                        onChange={(e) => setForm(f => ({ ...f, primaryColor: e.target.value.toUpperCase() }))}
+                        className="h-9 w-12 cursor-pointer rounded-md border border-gray-300 bg-white p-1" />
+                      <Input value={form.primaryColor} maxLength={7} className="font-mono"
+                        onChange={(e) => setForm(f => ({ ...f, primaryColor: e.target.value }))} />
+                    </div>
+                  </div>
+                </>
+              )}
+              {previewTheme(form.partyType, form.primaryColor) && (
+                <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
+                  <span className="text-xs text-gray-500">Theme preview</span>
+                  <ThemeSwatches theme={previewTheme(form.partyType, form.primaryColor)!} />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label htmlFor="partyDesc">Description</Label>
                 <Input id="partyDesc" placeholder="Brief description (optional)" value={form.partyDescription}
@@ -196,7 +262,7 @@ export function PartiesPage() {
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
             <Button
               onClick={() => createMutation.mutate(form)}
-              disabled={createMutation.isPending || !form.partyName || !form.mayorName || !form.mayorUsername || !form.mayorPassword}
+              disabled={createMutation.isPending || !form.partyType || (form.partyType === 'OTHER' && (!form.partyName.trim() || !previewTheme('OTHER', form.primaryColor))) || !form.mayorName || !form.mayorUsername || !form.mayorPassword}
             >
               {createMutation.isPending ? 'Creating...' : 'Create Party'}
             </Button>

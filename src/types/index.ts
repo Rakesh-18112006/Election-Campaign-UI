@@ -4,10 +4,26 @@ export type CampaignStatus = 'active' | 'paused' | 'completed' | 'draft';
 export type AreaType = 'district' | 'ward' | 'village' | 'street' | 'other';
 export type RecordStatus = 'unassigned' | 'assigned' | 'visited' | 'not_visited';
 
+export type PartyType = 'TDP' | 'YSRCP' | 'JANASENA' | 'BJP' | 'CONGRESS' | 'OTHER';
+
+export interface PartyTheme {
+  primary: string;
+  dark: string;
+  tint: string;
+  accent: string;
+}
+
+export interface UserTheme extends PartyTheme {
+  partyType: PartyType;
+  partyName: string;
+}
+
 export interface Party {
   _id: string;
   name: string;
   description?: string;
+  partyType?: PartyType;
+  theme?: PartyTheme;
   adminUserId?: string | User;
   createdBy: string | User;
   status: 'active' | 'suspended';
